@@ -1,5 +1,5 @@
 import * as THREE from 'three'
-import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
+import { RotateControls } from './RotateControls.js'
 
 // game variables
 let rotate = true
@@ -11,7 +11,8 @@ let rotVec = [
 let selected = null
 
 // params
-const size = 15
+const camDist = 30
+const cubeSize = 15
 
 // scene setup
 const scene = new THREE.Scene()
@@ -24,12 +25,7 @@ const camera = new THREE.PerspectiveCamera(
 const renderer = new THREE.WebGLRenderer()
 renderer.setSize(window.innerWidth, window.innerHeight)
 document.body.appendChild(renderer.domElement)
-camera.position.z = 30
-
-// controls
-const controls = new OrbitControls(camera, renderer.domElement)
-controls.enableZoom = false
-controls.enablePan = false
+camera.position.z = camDist
 
 // materials
 const materials = [
@@ -41,7 +37,20 @@ const materials = [
   new THREE.MeshBasicMaterial({ color: 0x00ffff, name: 'Cyan' }),
 ]
 
-// cube
+// look rotations
+const lookRotations = [
+  [-Math.PI / 2, 0, 0],
+  [Math.PI / 2, 0, 0],
+  [0, -Math.PI / 2, 0],
+  [0, Math.PI / 2, 0],
+  [0, 0, 0],
+  [0, 0, -Math.PI / 2],
+]
+
+/*
+Creates a "cube" out of 6 planes of certain size
+Uses materials array to determine face colors
+*/
 const createCube = (size) => {
   const cube = new THREE.Group()
 
@@ -54,6 +63,7 @@ const createCube = (size) => {
     [0, 0, size / 2],
     [0, 0, -size / 2],
   ]
+
   // rotations
   const rotations = [
     [0, Math.PI / 2, 0],
@@ -63,6 +73,7 @@ const createCube = (size) => {
     [0, 0, 0],
     [0, 0, 0],
   ]
+
   for (let i = 0; i < 6; i++) {
     const geometry = new THREE.PlaneGeometry(size, size)
     const material = new THREE.MeshBasicMaterial({
@@ -82,11 +93,16 @@ const createCube = (size) => {
   }
   return cube
 }
-const cube = createCube(size)
+const cube = createCube(cubeSize)
 cube.setRotationFromEuler(new THREE.Euler(Math.PI / 4, Math.PI / 4, 0))
 scene.add(cube)
 
-// animation
+// controls
+const controls = new RotateControls(cube, renderer.domElement)
+
+/*
+Automatically rotates cube every frame
+*/
 const animate = () => {
   requestAnimationFrame(animate)
 
@@ -108,18 +124,26 @@ const onPointerMove = (event) => {
   pointer.y = -(event.clientY / window.innerHeight) * 2 + 1
 }
 
-// hovering
+/*
+Resets all colors of the cube
+*/
 const resetColors = (object) => {
   for (let i = 0; i < 6; i++) {
     object.children[i].material = new THREE.MeshBasicMaterial({
       color: materials[i].color,
       side: THREE.DoubleSide,
       name: materials[i].name,
+      wireframe: false,
     })
   }
 }
-const render = () => {
-  window.requestAnimationFrame(render)
+
+/*
+Highlights cube faces when hovered over by mouse
+Updates every frame
+*/
+const highlight = () => {
+  window.requestAnimationFrame(highlight)
   raycaster.setFromCamera(pointer, camera)
   resetColors(cube)
   const intersects = raycaster.intersectObjects(cube.children)
@@ -137,31 +161,50 @@ const render = () => {
   }
   renderer.render(scene, camera)
 }
-window.addEventListener('pointermove', onPointerMove)
+window.addEventListener('pointermove', onPointerMove) // tracks pointer position for highlight function
 
-//  clicking
+/*
+Sets selected to face clicked on
+Stops rotation
+*/
 const mouseDown = () => {
   rotate = false
-  const worldPosition = new THREE.Vector3()
   raycaster.setFromCamera(pointer, camera)
   const intersects = raycaster.intersectObjects(cube.children)
   if (intersects.length > 0) {
     selected = intersects[0].object
-    intersects[0].object.getWorldPosition(worldPosition)
-    console.log(worldPosition)
   }
 }
 
+/*
+If mouse is released on nothing or non selected, nothing happens
+If mouse is released on selected, zoom in
+*/
 const mouseUp = () => {
-  rotate = true
   raycaster.setFromCamera(pointer, camera)
   const intersects = raycaster.intersectObjects(cube.children)
-  if (intersects.length <= 0) {
+  if (intersects.length <= 0) { // if released on nothing
     selected = null
+    rotate = true
     return
   }
-  if (intersects[0].object == selected) {
-    console.log('same')
+  if (intersects[0].object == selected) { // if released on selected
+    let index
+    for (let i = 0; i < 6; i++) {
+      if (cube.children[i] == selected) {
+        index = i
+      }
+    }
+    const pos = new THREE.Vector3(
+      lookRotations[index][0],
+      lookRotations[index][1],
+      lookRotations[index][2]
+    )
+    cube.lookAt(pos)
+  }
+  else // if released on not selected
+  {
+    rotate = true
   }
   selected = null
 }
@@ -170,4 +213,4 @@ window.addEventListener('mousedown', mouseDown)
 window.addEventListener('mouseup', mouseUp)
 
 animate()
-render()
+highlight()
