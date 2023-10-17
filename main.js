@@ -1,4 +1,5 @@
 import * as THREE from 'three'
+import gsap from 'gsap'
 import { RotateControls } from './RotateControls.js'
 
 // game variables
@@ -9,6 +10,7 @@ let rotVec = [
   Math.random() < 0.5 ? 1 : -1,
 ]
 let selected = null
+let canHighlight = true
 
 // params
 const camDist = 30
@@ -26,6 +28,10 @@ const renderer = new THREE.WebGLRenderer()
 renderer.setSize(window.innerWidth, window.innerHeight)
 document.body.appendChild(renderer.domElement)
 camera.position.z = camDist
+
+// raycasting
+const raycaster = new THREE.Raycaster()
+const pointer = new THREE.Vector2(window.innerWidth, window.innerHeight)
 
 // materials
 const materials = [
@@ -115,10 +121,9 @@ const animate = () => {
   renderer.render(scene, camera)
 }
 
-// raycasting
-const raycaster = new THREE.Raycaster()
-const pointer = new THREE.Vector2(window.innerWidth, window.innerHeight)
-
+/*
+Update pointer when pointer moves
+*/
 const onPointerMove = (event) => {
   pointer.x = (event.clientX / window.innerWidth) * 2 - 1
   pointer.y = -(event.clientY / window.innerHeight) * 2 + 1
@@ -146,6 +151,7 @@ const highlight = () => {
   window.requestAnimationFrame(highlight)
   raycaster.setFromCamera(pointer, camera)
   resetColors(cube)
+  if (canHighlight === false) return
   const intersects = raycaster.intersectObjects(cube.children)
   if (intersects.length <= 0) {
     return
@@ -177,18 +183,69 @@ const mouseDown = () => {
 }
 
 /*
+Creates animation for cube looking at specific position
+*/
+const cubeLook = (position, duration) => {
+  controls.canRotate = false
+  const prevRot = new THREE.Vector3()
+  const targetRot = new THREE.Vector3()
+  const prevEuler = new THREE.Euler()
+
+  prevRot.copy(cube.rotation)
+  prevEuler.setFromVector3(prevRot)
+
+  cube.lookAt(position)
+  targetRot.copy(cube.rotation)
+  cube.setRotationFromEuler(prevEuler)
+
+  console.log(prevRot)
+  console.log(targetRot)
+
+  gsap.to(cube.rotation, {
+    x: targetRot.x,
+    y: targetRot.y,
+    z: targetRot.z,
+    duration: duration,
+    onComplete: () => {
+      controls.canRotate = true
+      console.log('complete')
+    },
+  })
+}
+
+/*
+Creates animation for camera zooming in
+*/
+const camZoom = (position, duration) => {
+  gsap.to(camera.position, {
+    z: position,
+    duration: duration,
+    onComplete: () => {
+      console.log('complete')
+    },
+  })
+}
+
+/*
 If mouse is released on nothing or non selected, nothing happens
-If mouse is released on selected, zoom in
+If mouse is released on selected, rotate cube to face camera
 */
 const mouseUp = () => {
   raycaster.setFromCamera(pointer, camera)
   const intersects = raycaster.intersectObjects(cube.children)
-  if (intersects.length <= 0) { // if released on nothing
+  if (intersects.length <= 0) {
+    // if released on nothing
     selected = null
+    rotVec = [
+      Math.random() < 0.5 ? 1 : -1,
+      Math.random() < 0.5 ? 1 : -1,
+      Math.random() < 0.5 ? 1 : -1,
+    ]
     rotate = true
     return
   }
-  if (intersects[0].object == selected) { // if released on selected
+  if (intersects[0].object == selected) {
+    // if released on selected
     let index
     for (let i = 0; i < 6; i++) {
       if (cube.children[i] == selected) {
@@ -200,10 +257,16 @@ const mouseUp = () => {
       lookRotations[index][1],
       lookRotations[index][2]
     )
-    cube.lookAt(pos)
-  }
-  else // if released on not selected
-  {
+    canHighlight = false
+    cubeLook(pos, 1)
+    camZoom(cubeSize - 2.5, 1)
+  } // if released on not selected
+  else {
+    rotVec = [
+      Math.random() < 0.5 ? 1 : -1,
+      Math.random() < 0.5 ? 1 : -1,
+      Math.random() < 0.5 ? 1 : -1,
+    ]
     rotate = true
   }
   selected = null

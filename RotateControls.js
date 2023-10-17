@@ -13,6 +13,7 @@ class RotateControls extends EventDispatcher {
     this.domElement = domElement
 
     this.isDown = false
+    this.canRotate = true
 
     this.pointerSpeed = 2.0
 
@@ -67,6 +68,7 @@ class RotateControls extends EventDispatcher {
 
 function onMouseMove(event) {
   if (this.isDown === false) return
+  if (this.canRotate === false) return
 
   const movementX =
     event.movementX || event.mozMovementX || event.webkitMovementX || 0
