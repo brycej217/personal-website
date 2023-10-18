@@ -77,8 +77,8 @@ function onMouseMove(event) {
 
   const object = this.object
 
-  const angleX = movementY * 0.002 * this.pointerSpeed;
-  const angleY = movementX * 0.002 * this.pointerSpeed;
+  const angleX = movementY * 0.002 * this.pointerSpeed
+  const angleY = movementX * 0.002 * this.pointerSpeed
 
   object.rotateOnWorldAxis(_xAxis, angleX)
   object.rotateOnWorldAxis(_yAxis, angleY)

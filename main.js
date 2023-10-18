@@ -11,6 +11,8 @@ let rotVec = [
 ]
 let selected = null
 let canHighlight = true
+let onFace = false
+let index
 
 // params
 const camDist = 30
@@ -198,9 +200,6 @@ const cubeLook = (position, duration) => {
   targetRot.copy(cube.rotation)
   cube.setRotationFromEuler(prevEuler)
 
-  console.log(prevRot)
-  console.log(targetRot)
-
   gsap.to(cube.rotation, {
     x: targetRot.x,
     y: targetRot.y,
@@ -208,7 +207,6 @@ const cubeLook = (position, duration) => {
     duration: duration,
     onComplete: () => {
       controls.canRotate = true
-      console.log('complete')
     },
   })
 }
@@ -221,7 +219,19 @@ const camZoom = (position, duration) => {
     z: position,
     duration: duration,
     onComplete: () => {
-      console.log('complete')
+      if (onFace)
+      {
+        onFace = false
+        cube.visible = true
+        canHighlight = true
+        return
+      }
+      onFace = true
+      scene.background = new THREE.Color(materials[index].color) // change scene background color
+      cube.visible = false // hide cube
+      cube.rotateOnWorldAxis(new THREE.Vector3(0, 1, 0), Math.PI)
+      camera.position.z = camDist * 2 // bring camera to twice the starting position
+      rotate = true
     },
   })
 }
@@ -246,7 +256,6 @@ const mouseUp = () => {
   }
   if (intersects[0].object == selected) {
     // if released on selected
-    let index
     for (let i = 0; i < 6; i++) {
       if (cube.children[i] == selected) {
         index = i
@@ -272,8 +281,20 @@ const mouseUp = () => {
   selected = null
 }
 
+const keyDown = (event) => {
+  switch (event.key) {
+    case 'Escape':
+      console.log('esc')
+      if (onFace)
+      {
+        camZoom(camDist, 1)
+      }
+  }
+}
+
 window.addEventListener('mousedown', mouseDown)
 window.addEventListener('mouseup', mouseUp)
+window.addEventListener('keydown', keyDown)
 
 animate()
 highlight()
