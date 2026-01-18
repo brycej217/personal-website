@@ -8,7 +8,12 @@ import Cube from './Cube.js'
 
 // shaders
 import vertex_shader from '../shaders/vertex.js'
-import fragment_shader from '../shaders/fragment.js'
+import fragment0 from '../shaders/fragment0.js'
+import fragment1 from '../shaders/fragment1.js'
+import fragment2 from '../shaders/fragment2.js'
+
+// util
+import { next, prev } from './Utility.js'
 
 export default class Context {
   // THREE
@@ -31,7 +36,8 @@ export default class Context {
 
   // geoms
   cube
-  plane
+  planes = []
+  plane_index = 0
 
   constructor() {
     // scene initialization
@@ -51,12 +57,14 @@ export default class Context {
     document.body.appendChild(this.renderer.domElement)
     this.canvas = this.renderer.domElement // canvas
 
+    // add geoms
+    this.add_geoms()
+
     // gui
     this.gui = new GUI({ title: 'Debug' })
     this.gui.add(this.camera.position, 'z').listen().name('cam z')
-
-    // add geoms
-    this.add_geoms()
+    this.gui.add(this, 'plane_index').listen().name('plane idx')
+    this.gui.add(this.cube, 'id').listen().name('cube idx')
 
     // listener setup
     this.create_listeners()
@@ -65,10 +73,24 @@ export default class Context {
   add_geoms() {
     // geometry
     this.cube = new Cube(1)
-    this.plane = new Plane(1, vertex_shader, fragment_shader)
 
+    const plane0 = new Plane(0, vertex_shader, fragment0)
+    const plane1 = new Plane(1, vertex_shader, fragment1)
+    const plane2 = new Plane(2, vertex_shader, fragment2)
+
+    this.planes.push(plane0)
+    this.planes.push(plane1)
+    this.planes.push(plane2)
+
+    // add geoms
     this.add_geom(this.cube)
-    this.add_geom(this.plane)
+
+    for (const plane of this.planes) {
+      this.add_geom(plane)
+    }
+
+    // initial state: plane0 is background (stencil off), cube reveals plane1
+    this.planes[0].set_stencil(false)
   }
 
   add_geom(geom) {
@@ -99,19 +121,36 @@ export default class Context {
     const curr_z = this.camera.position.z
     let target_z = this.camera.position.z + delta * this.speed
 
+    // entered new cube
     if (target_z < 0) {
-      this.plane.set_stencil(false)
+      const curr_plane = this.planes[this.plane_index]
+      const next_idx = next(this.plane_index, this.planes.length)
+      const next_plane = this.planes[next_idx]
+
+      curr_plane.set_stencil(true)
+      next_plane.set_stencil(false)
+
+      this.plane_index = next_idx
+      this.cube.set_stencil(next(this.plane_index, this.planes.length))
 
       this.camera.position.z = this.reset_z
       this.camera.updateMatrixWorld(true)
       return
     }
 
+    // exited cube
     if (target_z > this.reset_z) {
+      const curr_plane = this.planes[this.plane_index]
+      const prev_idx = prev(this.plane_index, this.planes.length)
+      const prev_plane = this.planes[prev_idx]
+
+      curr_plane.set_stencil(true)
+      prev_plane.set_stencil(false)
+
+      this.plane_index = prev_idx
+      this.cube.set_stencil(curr_plane.id)
+
       this.camera.position.z = 0
-
-      this.plane.set_stencil(true)
-
       this.camera.updateMatrixWorld(true)
       return
     }
@@ -150,7 +189,9 @@ export default class Context {
     this.cube.mesh.rotation.x += 0.01 * 0.5
     this.cube.mesh.rotation.y += 0.01 * 0.5
 
-    this.plane.material.uniforms.time.value = t * 0.001
+    for (const plane of this.planes) {
+      plane.material.uniforms.time.value = t * 0.001
+    }
 
     this.renderer.render(this.scene, this.camera)
   }

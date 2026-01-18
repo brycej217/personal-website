@@ -17,8 +17,10 @@ export default class Plane {
       uniforms: {
         time: { value: 0 },
       },
+      depthTest: false, // required for avoiding z conflicts
+      depthWrite: false,
       stencilWrite: true,
-      stencilRef: id,
+      stencilRef: id + 1,
       stencilFunc: THREE.EqualStencilFunc,
     })
     this.mesh = new THREE.Mesh(this.geometry, this.material)
@@ -35,5 +37,6 @@ export default class Plane {
     this.material.stencilFunc = val
       ? THREE.EqualStencilFunc
       : THREE.AlwaysStencilFunc
+    this.mesh.renderOrder = val ? 1 : 0
   }
 }

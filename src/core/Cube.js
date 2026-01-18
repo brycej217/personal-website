@@ -14,11 +14,16 @@ export default class Cube {
     this.material = new THREE.MeshBasicMaterial({
       depthWrite: false,
       stencilWrite: true,
-      stencilRef: id,
+      stencilRef: this.id + 1,
       stencilFunc: THREE.AlwaysStencilFunc,
       stencilZPass: THREE.ReplaceStencilOp,
     })
     this.material.side = THREE.DoubleSide
     this.mesh = new THREE.Mesh(this.geometry, this.material)
+  }
+
+  set_stencil(id) {
+    this.id = id
+    this.material.stencilRef = this.id + 1
   }
 }
