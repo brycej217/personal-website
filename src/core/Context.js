@@ -1,5 +1,4 @@
 import * as THREE from 'three'
-import GUI from 'lil-gui'
 import { Text } from 'troika-three-text'
 
 import Interacter from './Interacter.js'
@@ -20,9 +19,6 @@ export default class Context {
   // window dimensions
   aspect
   fov = 75
-
-  // debug
-  gui
 
   // scenes
   scenes = {}
@@ -52,10 +48,6 @@ export default class Context {
     // interactions
     this.interacter = new Interacter(this.canvas, this.camera, this.scene)
 
-    // gui
-    this.gui = new GUI({ title: 'Debug' })
-    this.gui.add(this.camera.position, 'z').listen().name('cam z')
-
     // listener setup
     this.create_listeners()
   }
@@ -67,6 +59,7 @@ export default class Context {
     troikaText.color = options.color || 0xffffff
     troikaText.anchorX = options.anchorX || 'center'
     troikaText.anchorY = options.anchorY || 'middle'
+    troikaText.font = 'public/assets/fonts/fjalla.ttf'
 
     if (options.maxWidth) {
       troikaText.maxWidth = options.maxWidth

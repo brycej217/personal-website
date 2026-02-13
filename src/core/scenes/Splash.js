@@ -2,10 +2,20 @@ import * as THREE from 'three'
 import Scene from '../Scene.js'
 import Animations from '../Animations.js'
 import SceneObject from '../SceneObject.js'
+import vertexShader from '../../shaders/vertex.js'
+import fragmentShader from '../../shaders/fragment0.js'
 
 export default class Splash extends Scene {
   createMaterials() {
     this.geometries['box'] = new THREE.BoxGeometry(1, 1, 1)
+    this.geometries['plane'] = new THREE.PlaneGeometry(125, 125)
+    this.materials['plane'] = new THREE.ShaderMaterial({
+      vertexShader,
+      fragmentShader,
+      uniforms: {
+        time: { value: 0.0 },
+      },
+    })
     this.materials['stencil1'] = new THREE.MeshBasicMaterial({
       stencilWrite: true,
       stencilRef: 1,
@@ -38,6 +48,16 @@ export default class Splash extends Scene {
     })
     this.add(text)
     this.text = text
+
+    const plane = new SceneObject(
+      this.geometries['plane'],
+      this.materials['plane'],
+      { x: 0, y: 0, z: -10 },
+    )
+    plane.mesh.userData.onAnimate = (mesh, t) => {
+      this.materials['plane'].uniforms.time.value = t * 0.001
+    }
+    this.add(plane)
   }
 
   boxClick(hit) {

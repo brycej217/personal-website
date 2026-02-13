@@ -3,6 +3,10 @@ import gsap from 'gsap'
 import Scene from '../Scene.js'
 import SceneObject from '../SceneObject.js'
 import Animations from '../Animations.js'
+import vertexShader from '../../shaders/vertex.js'
+import vertexScreenShader from '../../shaders/vertex_screen.js'
+import fragmentShader from '../../shaders/fragment1.js'
+import fragment2Shader from '../../shaders/fragment2.js'
 
 export default class Projects extends Scene {
   createMaterials() {
@@ -18,7 +22,7 @@ export default class Projects extends Scene {
     }
 
     this.geometries['box'] = new THREE.BoxGeometry(1, 1, 1)
-    this.geometries['plane'] = new THREE.PlaneGeometry(50, 50)
+    this.geometries['plane'] = new THREE.PlaneGeometry(125, 125)
 
     this.geometries['project-window'] = new THREE.BoxGeometry(1, 1, 10)
     this.geometries['project-plane'] = new THREE.PlaneGeometry(1, 1)
@@ -59,8 +63,21 @@ export default class Projects extends Scene {
 
     this.add({ mesh: group })
 
-    this.materials['stencil1'] = new THREE.MeshBasicMaterial({
-      color: 0xf5f5dc,
+    this.materials['stencil1'] = new THREE.ShaderMaterial({
+      vertexShader,
+      fragmentShader,
+      uniforms: {
+        time: { value: 0.0 },
+      },
+      depthFunc: THREE.AlwaysDepth,
+      depthWrite: false,
+      stencilWrite: true,
+      stencilRef: 1,
+      stencilZPass: THREE.ReplaceStencilOp,
+      stencilFunc: THREE.EqualStencilFunc,
+    })
+    this.materials['stencil1-white'] = new THREE.MeshBasicMaterial({
+      color: 0xffffff,
       depthFunc: THREE.AlwaysDepth,
       depthWrite: false,
       stencilWrite: true,
@@ -69,8 +86,12 @@ export default class Projects extends Scene {
       stencilFunc: THREE.EqualStencilFunc,
     })
 
-    this.materials['stencil12'] = new THREE.MeshBasicMaterial({
-      color: 0x40e0d0,
+    this.materials['stencil12'] = new THREE.ShaderMaterial({
+      vertexShader: vertexScreenShader,
+      fragmentShader: fragment2Shader,
+      uniforms: {
+        time: { value: 0.0 },
+      },
       depthFunc: THREE.AlwaysDepth,
       stencilWrite: true,
       stencilRef: 1,
@@ -116,6 +137,16 @@ export default class Projects extends Scene {
       { x: 0, y: 0, z: -10 },
     )
     this.add(plane)
+    plane.mesh.userData.onAnimate = (mesh, t) => {
+      this.materials['stencil1'].uniforms.time.value = t * 0.001
+    }
+
+    const projText = this.ctx.create_text('Projects', {
+      fontSize: 0.5,
+      material: this.materials['stencil1-white'],
+      position: { x: 0, y: 1.0, z: -2.5 },
+    })
+    this.add(projText)
 
     // stencil window
     const projectWindow = new SceneObject(
@@ -129,6 +160,9 @@ export default class Projects extends Scene {
     projectWindow.onClick = (hit) => this.projectClick(hit)
     projectWindow.mesh.userData.onHover = () => this.boxHover()
     projectWindow.mesh.userData.deHover = () => this.boxDehover()
+    projectWindow.mesh.userData.onAnimate = (mesh, t) => {
+      this.materials['stencil12'].uniforms.time.value = t * 0.001
+    }
 
     // title text
     const cudaText = this.ctx.create_text('CUDA Path Tracer', {
