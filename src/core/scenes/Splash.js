@@ -32,7 +32,10 @@ export default class Splash extends Scene {
         Animations.rotate(mesh)
     }
 
-    const text = this.ctx.create_text("Hi, I'm Bryce", -5, 3.5, 2.5)
+    const text = this.ctx.create_text("Hi, I'm Bryce", {
+      fontSize: 2.5,
+      position: { x: 0, y: 3.5, z: -5 },
+    })
     this.add(text)
     this.text = text
   }
@@ -44,7 +47,6 @@ export default class Splash extends Scene {
       this.disable(this.ctx)
 
       projects.materials['stencil1'].stencilFunc = THREE.AlwaysStencilFunc
-      projects.materials['stencil12'].stencilFunc = THREE.AlwaysStencilFunc
     })
   }
 
@@ -52,7 +54,6 @@ export default class Splash extends Scene {
     const projects = this.ctx.scenes['projects']
 
     projects.materials['stencil1'].stencilFunc = THREE.EqualStencilFunc
-    projects.materials['stencil12'].stencilFunc = THREE.EqualStencilFunc
     this.enable(this.ctx)
 
     Animations.exitScene(this.ctx, 5, this, () => {})

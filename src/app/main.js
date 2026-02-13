@@ -1,12 +1,9 @@
 import * as THREE from 'three'
 import Context from '../core/Context.js'
-import { FontLoader } from 'three/addons/loaders/FontLoader.js'
 import Splash from '../core/scenes/Splash.js'
 import Projects from '../core/scenes/Projects.js'
 
-const loader = new FontLoader()
-const font = await loader.loadAsync('public/assets/roboto.json')
-const ctx = new Context(font)
+const ctx = new Context()
 
 // scenes
 const splash = new Splash(ctx)

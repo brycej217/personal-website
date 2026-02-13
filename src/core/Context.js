@@ -1,10 +1,8 @@
 import * as THREE from 'three'
 import GUI from 'lil-gui'
+import { Text } from 'troika-three-text'
 
 import Interacter from './Interacter.js'
-// text
-import { TextGeometry } from 'three/addons/geometries/TextGeometry.js'
-import SceneObject from './SceneObject.js'
 
 export default class Context {
   // THREE
@@ -29,14 +27,10 @@ export default class Context {
   // scenes
   scenes = {}
 
-  // font
-  font
-
-  constructor(font) {
+  constructor() {
     // scene initialization
     this.scene = new THREE.Scene()
     this.scene.background = new THREE.Color(0x000000)
-    this.font = font
 
     // camera initialization
     this.aspect = window.innerWidth / window.innerHeight
@@ -66,27 +60,33 @@ export default class Context {
     this.create_listeners()
   }
 
-  create_text(text, z, y, size) {
-    const geometry = new TextGeometry(text, {
-      font: this.font,
-      size: size,
-      height: 0.001,
-      depth: 0,
-      curveSegments: 12,
-    })
+  create_text(text, options = {}) {
+    const troikaText = new Text()
+    troikaText.text = text
+    troikaText.fontSize = options.fontSize || 0.5
+    troikaText.color = options.color || 0xffffff
+    troikaText.anchorX = options.anchorX || 'center'
+    troikaText.anchorY = options.anchorY || 'middle'
 
-    geometry.center()
+    if (options.maxWidth) {
+      troikaText.maxWidth = options.maxWidth
+    }
 
-    const material = new THREE.MeshBasicMaterial({
-      color: 0xffffff,
-      transparent: true,
-      opacity: 1,
-    })
+    if (options.material) {
+      troikaText.material = options.material
+    }
 
-    const textObj = new SceneObject(geometry, material)
-    textObj.mesh.position.z = z
-    textObj.mesh.position.y = y
-    return textObj
+    if (options.position) {
+      troikaText.position.set(
+        options.position.x || 0,
+        options.position.y || 0,
+        options.position.z || 0,
+      )
+    }
+
+    troikaText.sync()
+
+    return { mesh: troikaText }
   }
 
   create_listeners() {
