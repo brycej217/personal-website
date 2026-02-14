@@ -1,14 +1,15 @@
 import * as THREE from 'three'
 import gsap from 'gsap'
 import SceneObject from './SceneObject.js'
-import vertexScreenShader from '../shaders/vertex_screen.js'
-import fragment2Shader from '../shaders/fragment2.js'
+import vertexShader from '../shaders/vertex.js'
+import Animations from './Animations.js'
 
-function makeReaderMaterial(stencilRef, opts = {}) {
+function makeReaderMaterial(stencilRef, layerBits, opts = {}) {
   return new THREE.MeshBasicMaterial({
     depthFunc: THREE.AlwaysDepth,
     stencilWrite: true,
-    stencilRef,
+    stencilFuncMask: layerBits,
+    stencilRef: stencilRef,
     stencilFunc: THREE.EqualStencilFunc,
     stencilZPass: THREE.KeepStencilOp,
     side: THREE.DoubleSide,
@@ -18,11 +19,16 @@ function makeReaderMaterial(stencilRef, opts = {}) {
 }
 
 export default class ProjectObject {
-  constructor(ctx, stencilRef, position, config) {
+  constructor(ctx, stencilRef, position, fragment, config) {
     this.ctx = ctx
-    this.stencilRef = stencilRef
+    this.stencilRef = (stencilRef << 1) | 1 // bitshift mask bits by 1 and append 1 for comp
     this.position = position
     this.config = config
+    this.offsetZ = this.position.z - 2.5
+    this.fragment = fragment
+
+    this.compBit = 0x01 // 00000001
+    this.layerBits = 0x1e // 00011110
 
     this.carousel = {
       group: null,
@@ -42,38 +48,63 @@ export default class ProjectObject {
     this._onKeyDown = (e) => this.onKeyDown(e)
 
     this._createWindow()
+    this._createPlane()
     this._createCarousel()
     this._createText()
     this._initScrollables()
   }
 
-  _createWindow() {
-    const windowMat = new THREE.ShaderMaterial({
-      vertexShader: vertexScreenShader,
-      fragmentShader: fragment2Shader,
+  _createPlane() {
+    const planeMat = new THREE.ShaderMaterial({
+      vertexShader: vertexShader,
+      fragmentShader: this.fragment,
       uniforms: {
         time: { value: 0.0 },
       },
       depthFunc: THREE.AlwaysDepth,
+      depthWrite: true,
       stencilWrite: true,
+      stencilFuncMask: this.layerBits, // only compare upper bits
       stencilRef: this.stencilRef,
-      stencilFunc: THREE.AlwaysStencilFunc,
+      stencilFunc: THREE.EqualStencilFunc,
+      stencilZPass: THREE.KeepStencilOp,
+    })
+
+    const geom = new THREE.PlaneGeometry(125, 125)
+    this.plane = new SceneObject(geom, planeMat, {
+      x: 0,
+      y: 0,
+      z: this.offsetZ - 5,
+    })
+    this.plane.mesh.userData.onAnimate = (mesh, t) => {
+      planeMat.uniforms.time.value = t * 0.001
+    }
+    this._objects.push(this.plane)
+  }
+
+  _createWindow() {
+    const windowMat = new THREE.MeshBasicMaterial({
+      depthFunc: THREE.AlwaysDepth,
+      stencilWrite: true,
+      stencilFuncMask: this.compBit, // only compare first bit
+      stencilRef: this.stencilRef,
+      stencilWriteMask: this.layerBits, // only write onto upper bits
+      stencilFunc: THREE.EqualStencilFunc,
       stencilZPass: THREE.ReplaceStencilOp,
       side: THREE.DoubleSide,
     })
     this._windowMaterial = windowMat
 
-    const geom = new THREE.PlaneGeometry(1, 1)
+    const geom = new THREE.BoxGeometry(1, 1, 1)
     this.window = new SceneObject(geom, windowMat, this.position)
     this.window.mesh.userData.onAnimate = (mesh, t) => {
-      windowMat.uniforms.time.value = t * 0.001
+      this.window.mesh.userData.onAnimate = (mesh, t) => Animations.rotate(mesh)
     }
     this._objects.push(this.window)
   }
 
   _createCarousel() {
     const textureLoader = new THREE.TextureLoader()
-    const slideZ = this.position.z + 2.5
 
     this.carousel.textures = this.config.images.map((url, i) =>
       textureLoader.load(url, (texture) => {
@@ -91,13 +122,13 @@ export default class ProjectObject {
     this.carousel.group = group
     const n = this.carousel.textures.length
     for (let i = 0; i < n; i++) {
-      const mat = makeReaderMaterial(this.stencilRef, {
+      const mat = makeReaderMaterial(this.stencilRef, this.layerBits, {
         map: this.carousel.textures[i],
       })
       const geom = new THREE.PlaneGeometry(1, 1)
       const mesh = new THREE.Mesh(geom, mat)
       mesh.scale.x = this.carousel.aspect
-      mesh.position.set(0, 0, slideZ)
+      mesh.position.set(0, 0, this.offsetZ)
       mesh.position.x = this.carousel.spacing * (i - n / 2)
       this.carousel.slides.push(mesh)
       group.add(mesh)
@@ -107,14 +138,17 @@ export default class ProjectObject {
   }
 
   _createText() {
-    const contentZ = this.position.z + 2.5
-    const titleMat = makeReaderMaterial(this.stencilRef, { color: 0xffffff })
-    const writeupMat = makeReaderMaterial(this.stencilRef, { color: 0xffffff })
+    const titleMat = makeReaderMaterial(this.stencilRef, this.layerBits, {
+      color: 0xffffff,
+    })
+    const writeupMat = makeReaderMaterial(this.stencilRef, this.layerBits, {
+      color: 0xffffff,
+    })
 
     this._title = this.ctx.create_text(this.config.title, {
       fontSize: 0.5,
       material: titleMat,
-      position: { x: this.position.x, y: 1.5, z: contentZ },
+      position: { x: this.position.x, y: 1.5, z: this.offsetZ },
     })
     this._objects.push(this._title)
 
@@ -124,7 +158,7 @@ export default class ProjectObject {
       material: writeupMat,
       anchorX: 'center',
       anchorY: 'top',
-      position: { x: this.position.x, y: -0.8, z: contentZ },
+      position: { x: this.position.x, y: -0.8, z: this.offsetZ },
     })
     this._objects.push(this._writeup)
   }

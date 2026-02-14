@@ -1,5 +1,6 @@
 import * as THREE from 'three'
 import { Text } from 'troika-three-text'
+import GUI from 'lil-gui'
 
 import Interacter from './Interacter.js'
 
@@ -50,6 +51,13 @@ export default class Context {
 
     // listener setup
     this.create_listeners()
+
+    // debug gui
+    this.gui = new GUI()
+    const camFolder = this.gui.addFolder('Camera Position')
+    camFolder.add(this.camera.position, 'x').listen().step(0.01)
+    camFolder.add(this.camera.position, 'y').listen().step(0.01)
+    camFolder.add(this.camera.position, 'z').listen().step(0.01)
   }
 
   create_text(text, options = {}) {

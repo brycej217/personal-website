@@ -7,9 +7,11 @@ export default class Animations {
     return meshes
   }
 
-  static enterScene(ctx, targetZ, targetScene, onComplete) {
+  static enterScene(ctx, targetPos, targetScene, onComplete) {
     gsap.to(ctx.camera.position, {
-      z: targetZ,
+      x: targetPos.x,
+      y: targetPos.y,
+      z: targetPos.z,
       duration: 2,
       ease: 'power4.inOut',
       onComplete: () => {
@@ -22,12 +24,14 @@ export default class Animations {
     })
   }
 
-  static exitScene(ctx, targetZ, returnScene, onComplete) {
+  static exitScene(ctx, targetPos, returnScene, onComplete) {
     if (returnScene) {
       ctx.interacter.interactables = Animations.getInteractables(returnScene)
     }
     gsap.to(ctx.camera.position, {
-      z: targetZ,
+      x: targetPos.x,
+      y: targetPos.y,
+      z: targetPos.z,
       duration: 2,
       ease: 'power4.inOut',
       onComplete: () => {

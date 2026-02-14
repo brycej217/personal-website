@@ -6,84 +6,85 @@ import vertexShader from '../../shaders/vertex.js'
 import fragmentShader from '../../shaders/fragment0.js'
 
 export default class Splash extends Scene {
-  createMaterials() {
-    this.geometries['box'] = new THREE.BoxGeometry(1, 1, 1)
-    this.geometries['plane'] = new THREE.PlaneGeometry(125, 125)
-    this.materials['plane'] = new THREE.ShaderMaterial({
-      vertexShader,
-      fragmentShader,
-      uniforms: {
-        time: { value: 0.0 },
-      },
-    })
-    this.materials['stencil1'] = new THREE.MeshBasicMaterial({
+  _createProjectWindow() {
+    const geom = new THREE.BoxGeometry(1, 1, 1)
+    const mat = new THREE.MeshBasicMaterial({
       stencilWrite: true,
       stencilRef: 1,
       stencilFunc: THREE.AlwaysStencilFunc,
       stencilZPass: THREE.ReplaceStencilOp,
       side: THREE.DoubleSide,
     })
-  }
-
-  createScene() {
-    const splashBox = new SceneObject(
-      this.geometries['box'],
-      this.materials['stencil1'],
-      { x: 0, y: 0, z: 0 },
-    )
-    this.add(splashBox)
-    this.splashBox = splashBox
+    const projectWindow = new SceneObject(geom, mat, { x: 0, y: 0, z: 0 })
+    this.add(projectWindow)
 
     {
-      this.splashBox.onClick = (hit) => this.boxClick(hit)
-      this.splashBox.mesh.userData.onHover = (hit) => this.boxHover()
-      this.splashBox.mesh.userData.deHover = () => this.boxDehover()
-      this.splashBox.mesh.userData.onAnimate = (mesh, t) =>
+      projectWindow.onClick = (hit) => this.boxClick(hit, projectWindow)
+      projectWindow.mesh.userData.onHover = () => this.boxHover(projectWindow)
+      projectWindow.mesh.userData.deHover = () => this.boxDehover(projectWindow)
+      projectWindow.mesh.userData.onAnimate = (mesh, t) =>
         Animations.rotate(mesh)
     }
+  }
 
+  _createPlane() {
+    const geom = new THREE.PlaneGeometry(125, 125)
+    const mat = new THREE.ShaderMaterial({
+      vertexShader,
+      fragmentShader,
+      uniforms: {
+        time: { value: 0.0 },
+      },
+    })
+    const plane = new SceneObject(geom, mat, {
+      x: 0,
+      y: 0,
+      z: -10,
+    })
+    plane.mesh.userData.onAnimate = (mesh, t) => {
+      mat.uniforms.time.value = t * 0.001
+    }
+    this.add(plane)
+  }
+
+  _createText() {
     const text = this.ctx.create_text("Hi, I'm Bryce", {
       fontSize: 2.5,
       position: { x: 0, y: 3.5, z: -5 },
     })
     this.add(text)
     this.text = text
+  }
 
-    const plane = new SceneObject(
-      this.geometries['plane'],
-      this.materials['plane'],
-      { x: 0, y: 0, z: -10 },
-    )
-    plane.mesh.userData.onAnimate = (mesh, t) => {
-      this.materials['plane'].uniforms.time.value = t * 0.001
-    }
-    this.add(plane)
+  createScene() {
+    this._createProjectWindow()
+    this._createPlane()
+    this._createText()
   }
 
   boxClick(hit) {
     const projects = this.ctx.scenes['projects']
-    Animations.enterScene(this.ctx, 0, projects, () => {
+    Animations.enterScene(this.ctx, { x: 0, y: 0, z: 0 }, projects, () => {
       this.ctx.interacter.onEscape.push(() => this.exitScene())
-      this.disable(this.ctx)
 
-      projects.materials['stencil1'].stencilFunc = THREE.AlwaysStencilFunc
+      projects.planeMat.stencilFunc = THREE.AlwaysStencilFunc // project background plane now always writing 1
+      this.disableObject(this.ctx, this.text)
     })
   }
 
   exitScene() {
     const projects = this.ctx.scenes['projects']
 
-    projects.materials['stencil1'].stencilFunc = THREE.EqualStencilFunc
-    this.enable(this.ctx)
-
-    Animations.exitScene(this.ctx, 5, this, () => {})
+    projects.planeMat.stencilFunc = THREE.EqualStencilFunc
+    this.enableObject(this.ctx, this.text)
+    Animations.exitScene(this.ctx, { x: 0, y: 0, z: 5 }, this, () => {})
   }
 
-  boxHover() {
-    Animations.hoverScale(this.splashBox.mesh, 1.15, this.ctx.canvas)
+  boxHover(window) {
+    Animations.hoverScale(window.mesh, 1.15, this.ctx.canvas)
   }
 
-  boxDehover() {
-    Animations.dehoverScale(this.splashBox.mesh, this.ctx.canvas)
+  boxDehover(window) {
+    Animations.dehoverScale(window.mesh, this.ctx.canvas)
   }
 }

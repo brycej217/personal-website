@@ -6,6 +6,24 @@
 		<style>
 			* { margin: 0; padding: 0; }
 			canvas { display: block; }
+			nav {
+				position: fixed;
+				top: 0;
+				left: 0;
+				z-index: 10;
+				padding: 16px 24px;
+				display: flex;
+				gap: 20px;
+			}
+			nav a {
+				color: #fff;
+				text-decoration: none;
+				font-family: sans-serif;
+				font-size: 14px;
+				opacity: 0.8;
+				transition: opacity 0.2s;
+			}
+			nav a:hover { opacity: 1; }
 		</style>
 	</head>
 	<script type="importmap">
@@ -20,6 +38,10 @@
     }
     </script>
 	<body>
+		<nav>
+			<a href="https://github.com/brycej217" target="_blank">GitHub</a>
+			<a href="https://www.linkedin.com/in/brycejoseph/" target="_blank">LinkedIn</a>
+		</nav>
 		<script type="module" src="src/app/main.js"></script>
 	</body>
 </html>

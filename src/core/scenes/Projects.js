@@ -4,15 +4,17 @@ import SceneObject from '../SceneObject.js'
 import ProjectObject from '../ProjectObject.js'
 import Animations from '../Animations.js'
 import vertexShader from '../../shaders/vertex.js'
-import fragmentShader from '../../shaders/fragment1.js'
+import fragmentShader1 from '../../shaders/fragment1.js'
+import fragmentShader2 from '../../shaders/fragment2.js'
+import fragmentShader3 from '../../shaders/fragment3.js'
 
 export default class Projects extends Scene {
-  createMaterials() {
-    this.geometries['plane'] = new THREE.PlaneGeometry(125, 125)
+  _createPlane() {
+    const geom = new THREE.PlaneGeometry(125, 125)
 
-    this.materials['stencil1'] = new THREE.ShaderMaterial({
+    const mat = new THREE.ShaderMaterial({
       vertexShader,
-      fragmentShader,
+      fragmentShader: fragmentShader1,
       uniforms: {
         time: { value: 0.0 },
       },
@@ -23,7 +25,17 @@ export default class Projects extends Scene {
       stencilZPass: THREE.ReplaceStencilOp,
       stencilFunc: THREE.EqualStencilFunc,
     })
-    this.materials['stencil1-white'] = new THREE.MeshBasicMaterial({
+    this.planeMat = mat
+
+    const plane = new SceneObject(geom, mat, { x: 0, y: 0, z: -10 })
+    this.add(plane)
+    plane.mesh.userData.onAnimate = (mesh, t) => {
+      mat.uniforms.time.value = t * 0.001
+    }
+  }
+
+  _createText() {
+    const mat = new THREE.MeshBasicMaterial({
       color: 0xffffff,
       depthFunc: THREE.AlwaysDepth,
       depthWrite: false,
@@ -32,32 +44,22 @@ export default class Projects extends Scene {
       stencilZPass: THREE.ReplaceStencilOp,
       stencilFunc: THREE.EqualStencilFunc,
     })
-  }
-
-  createScene() {
-    // background plane (stencil 1 reader)
-    const plane = new SceneObject(
-      this.geometries['plane'],
-      this.materials['stencil1'],
-      { x: 0, y: 0, z: -10 },
-    )
-    this.add(plane)
-    plane.mesh.userData.onAnimate = (mesh, t) => {
-      this.materials['stencil1'].uniforms.time.value = t * 0.001
-    }
 
     const projText = this.ctx.create_text('Projects', {
-      fontSize: 0.5,
-      material: this.materials['stencil1-white'],
-      position: { x: 0, y: 1.0, z: -2.5 },
+      fontSize: 1.5,
+      material: mat,
+      position: { x: 0, y: 2.5, z: -5.0 },
     })
     this.add(projText)
+  }
 
+  _createProjects() {
     // project object
-    this.project = new ProjectObject(
+    const cudaProject = new ProjectObject(
       this.ctx,
       2,
-      { x: 0, y: 0, z: -7.5 },
+      { x: -1.5, y: 0, z: -5.0 },
+      fragmentShader2,
       {
         title: 'CUDA Path Tracer',
         images: [
@@ -84,43 +86,78 @@ export default class Projects extends Scene {
       },
     )
 
-    for (const obj of this.project.objects()) {
-      this.add(obj)
-    }
+    // glRemix project
+    const glRemixProject = new ProjectObject(
+      this.ctx,
+      3,
+      { x: 1.5, y: 0, z: -5.0 },
+      fragmentShader3,
+      {
+        title: 'glRemix',
+        images: [],
+        writeup:
+          'Lorem ipsum dolor sit amet, consectetur adipiscing elit. ' +
+          'Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. ' +
+          'Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.',
+      },
+    )
 
-    this.projectWindow = this.project.window
-    this.projectWindow.onClick = (hit) => this.projectClick(hit)
-    this.projectWindow.mesh.userData.onHover = () => this.boxHover()
-    this.projectWindow.mesh.userData.deHover = () => this.boxDehover()
+    this.projects.push(cudaProject)
+    this.projects.push(glRemixProject)
   }
 
-  projectClick(hit) {
-    Animations.enterScene(this.ctx, -2.5, null, () => {
+  createScene() {
+    this.projects = []
+    this._createPlane()
+    this._createText()
+    this._createProjects()
+
+    // link up projects
+    for (const project of this.projects) {
+      for (const obj of project.objects()) {
+        this.add(obj)
+      }
+
+      project.window.onClick = (hit) => this.projectClick(hit, project)
+      project.window.mesh.userData.onHover = () => this.boxHover(project)
+      project.window.mesh.userData.deHover = () => this.boxDehover(project)
+    }
+  }
+
+  projectClick(hit, project) {
+    this.activeProject = project
+    Animations.enterScene(this.ctx, project.position, null, () => {
       this.ctx.interacter.onEscape.push(() => this.exitScene())
       this.ctx.interacter.interactables = []
-      this.ctx.canvas.addEventListener('wheel', this.project._onWheel, {
+      this.ctx.canvas.addEventListener('wheel', project._onWheel, {
         passive: false,
       })
-      window.addEventListener('keydown', this.project._onKeyDown)
+      window.addEventListener('keydown', project._onKeyDown)
     })
   }
 
   exitScene() {
-    this.ctx.canvas.removeEventListener('wheel', this.project._onWheel)
-    window.removeEventListener('keydown', this.project._onKeyDown)
-    this.project.resetScroll()
+    const project = this.activeProject
+    this.ctx.canvas.removeEventListener('wheel', project._onWheel)
+    window.removeEventListener('keydown', project._onKeyDown)
+    project.resetScroll()
 
-    Animations.exitScene(this.ctx, 0, this.ctx.scenes['projects'], () => {
-      this.ctx.interactables =
-        Animations.getInteractables[this.ctx.scenes['splash']]
-    })
+    Animations.exitScene(
+      this.ctx,
+      { x: 0, y: 0, z: 0 },
+      this.ctx.scenes['projects'],
+      () => {
+        this.ctx.interactables =
+          Animations.getInteractables[this.ctx.scenes['splash']]
+      },
+    )
   }
 
-  boxHover() {
-    Animations.hoverScale(this.projectWindow.mesh, 1.05, this.ctx.canvas)
+  boxHover(project) {
+    Animations.hoverScale(project.window.mesh, 1.05, this.ctx.canvas)
   }
 
-  boxDehover() {
-    Animations.dehoverScale(this.projectWindow.mesh, this.ctx.canvas)
+  boxDehover(project) {
+    Animations.dehoverScale(project.window.mesh, this.ctx.canvas)
   }
 }
