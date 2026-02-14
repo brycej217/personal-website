@@ -34,7 +34,7 @@ export default class Projects extends Scene {
     }
   }
 
-  _createText() {
+  _createText(content) {
     const mat = new THREE.MeshBasicMaterial({
       color: 0xffffff,
       depthFunc: THREE.AlwaysDepth,
@@ -45,7 +45,7 @@ export default class Projects extends Scene {
       stencilFunc: THREE.EqualStencilFunc,
     })
 
-    const projText = this.ctx.create_text('Projects', {
+    const projText = this.ctx.create_text(content.title, {
       fontSize: 1.5,
       material: mat,
       position: { x: 0, y: 2.5, z: -5.0 },
@@ -53,64 +53,30 @@ export default class Projects extends Scene {
     this.add(projText)
   }
 
-  _createProjects() {
-    // project object
-    const cudaProject = new ProjectObject(
-      this.ctx,
-      2,
+  _createProjects(content) {
+    const fragments = [fragmentShader2, fragmentShader3]
+    const positions = [
       { x: -1.5, y: 0, z: -5.0 },
-      fragmentShader2,
-      {
-        title: 'CUDA Path Tracer',
-        images: [
-          'public/assets/images/cuda0.png',
-          'public/assets/images/cuda1.png',
-          'public/assets/images/cuda2.png',
-          'public/assets/images/cuda3.png',
-          'public/assets/images/cuda4.png',
-        ],
-        writeup:
-          'A physically-based path tracer built from scratch using CUDA for ' +
-          'GPU-accelerated rendering. Features include Monte Carlo integration, ' +
-          'Russian roulette path termination, and support for diffuse, specular, ' +
-          'and refractive materials. The renderer implements a BVH acceleration ' +
-          'structure for efficient ray-scene intersection testing.\n\n' +
-          'The renderer supports area lights, environment mapping, and depth of ' +
-          'field effects. Scenes are defined using a custom JSON format that ' +
-          'describes geometry, materials, and camera parameters. The BVH is ' +
-          'constructed using the surface area heuristic (SAH) for optimal ' +
-          'traversal performance.\n\n' +
-          'Performance optimizations include shared memory usage for warp-level ' +
-          'operations, persistent threads to minimize kernel launch overhead, ' +
-          'and adaptive sampling that allocates more rays to high-variance pixels.',
-      },
-    )
-
-    // glRemix project
-    const glRemixProject = new ProjectObject(
-      this.ctx,
-      3,
       { x: 1.5, y: 0, z: -5.0 },
-      fragmentShader3,
-      {
-        title: 'glRemix',
-        images: [],
-        writeup:
-          'Lorem ipsum dolor sit amet, consectetur adipiscing elit. ' +
-          'Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. ' +
-          'Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.',
-      },
-    )
+    ]
 
-    this.projects.push(cudaProject)
-    this.projects.push(glRemixProject)
+    content.items.forEach((item, i) => {
+      const project = new ProjectObject(
+        this.ctx,
+        i + 2,
+        positions[i],
+        fragments[i],
+        item,
+      )
+      this.projects.push(project)
+    })
   }
 
-  createScene() {
+  createScene(content) {
     this.projects = []
     this._createPlane()
-    this._createText()
-    this._createProjects()
+    this._createText(content)
+    this._createProjects(content)
 
     // link up projects
     for (const project of this.projects) {

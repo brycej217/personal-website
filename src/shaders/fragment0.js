@@ -1,5 +1,6 @@
 export default /* glsl */ `
 uniform float time;
+uniform float camY;
 varying vec2 vUv;
 
 float hash21(vec2 p) {
@@ -24,8 +25,13 @@ void main()
     float ripple = wave * falloff;
 
     float pulse = 0.5 + 0.5 * sin(time * 0.6);
-    vec3 baseColor   = vec3(0.01, 0.72, 1.0);
-    vec3 rippleColor = vec3(0.62, 0.13, 0.74);
+    float hueShift = smoothstep(0.0, 2.0, camY);
+    vec3 blueBase   = vec3(0.01, 0.72, 1.0);
+    vec3 greenBase   = vec3(0.01, 0.8, 0.45);
+    vec3 blueRipple = vec3(0.62, 0.13, 0.74);
+    vec3 greenRipple = vec3(0.13, 0.74, 0.35);
+    vec3 baseColor   = mix(blueBase, greenBase, hueShift);
+    vec3 rippleColor = mix(blueRipple, greenRipple, hueShift);
     baseColor   *= mix(0.95, 1.05, pulse);
     rippleColor *= mix(1.05, 0.95, pulse);
 

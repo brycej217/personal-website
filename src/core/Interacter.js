@@ -53,16 +53,16 @@ export default class Interacter {
     const mouse_x = event.clientX / window.innerWidth - 0.5
     const mouse_y = event.clientY / window.innerHeight - 0.5
 
-    const max = 0.5
+    const max = 0.25
 
     const set_cam_x = gsap.quickTo(this.camera.rotation, 'x', {
-      duration: 4,
+      duration: 2,
       ease: 'power4.out',
       overwrite: 'auto',
     })
 
     const set_cam_y = gsap.quickTo(this.camera.rotation, 'y', {
-      duration: 4,
+      duration: 2,
       ease: 'power4.out',
       overwrite: 'auto',
     })

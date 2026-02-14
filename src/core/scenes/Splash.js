@@ -1,6 +1,7 @@
 import * as THREE from 'three'
 import Scene from '../Scene.js'
 import Animations from '../Animations.js'
+import gsap from 'gsap'
 import SceneObject from '../SceneObject.js'
 import vertexShader from '../../shaders/vertex.js'
 import fragmentShader from '../../shaders/fragment0.js'
@@ -25,6 +26,8 @@ export default class Splash extends Scene {
       projectWindow.mesh.userData.onAnimate = (mesh, t) =>
         Animations.rotate(mesh)
     }
+    projectWindow.mesh.userData.basePos = projectWindow.mesh.position
+    this.projectWindow = projectWindow
   }
 
   _createPlane() {
@@ -34,6 +37,7 @@ export default class Splash extends Scene {
       fragmentShader,
       uniforms: {
         time: { value: 0.0 },
+        camY: { value: 0.0 },
       },
     })
     const plane = new SceneObject(geom, mat, {
@@ -43,41 +47,116 @@ export default class Splash extends Scene {
     })
     plane.mesh.userData.onAnimate = (mesh, t) => {
       mat.uniforms.time.value = t * 0.001
+      mat.uniforms.camY.value = this.scrollY
     }
     this.add(plane)
   }
 
-  _createText() {
-    const text = this.ctx.create_text("Hi, I'm Bryce", {
-      fontSize: 2.5,
-      position: { x: 0, y: 3.5, z: -5 },
+  _createTitle(content) {
+    const title = this.ctx.create_text(content.title, {
+      fontSize: 1.5,
+      position: { x: 0, y: 2.5, z: 0 },
     })
-    this.add(text)
-    this.text = text
+    this.add(title)
+    this.title = title
   }
 
-  createScene() {
+  _createText(content) {
+    // About Me
+    this.learn = this.ctx.create_text(content.learn, {
+      fontSize: 0.35,
+      maxWidth: 5,
+      anchorX: 'center',
+      anchorY: 'top',
+      position: { x: 0, y: -2.0, z: 0 },
+    })
+    this.add(this.learn)
+
+    // Down Arrow
+    this.arrow = this.ctx.create_text('↓', {
+      fontSize: 0.4,
+      anchorX: 'center',
+      anchorY: 'top',
+      position: { x: 0, y: -2.6, z: -0.01 },
+    })
+    this.add(this.arrow)
+    gsap.to(this.arrow.mesh.position, {
+      y: this.arrow.mesh.position.y - 0.15,
+      duration: 0.8,
+      ease: 'power1.inOut',
+      yoyo: true,
+      repeat: -1,
+    })
+
+    // Hi, I'm Bryce
+    this.about = this.ctx.create_text(content.about, {
+      fontSize: 0.2,
+      maxWidth: 5,
+      anchorX: 'center',
+      anchorY: 'top',
+      position: { x: 0, y: -5.75, z: 0 },
+    })
+    this.add(this.about)
+  }
+
+  _createHeadshot(content) {
+    const texture = new THREE.TextureLoader().load(content.headshot)
+    const headshotMat = new THREE.MeshBasicMaterial({
+      map: texture,
+      transparent: true,
+      opacity: 0,
+      depthWrite: false,
+    })
+    const headshotGeom = new THREE.PlaneGeometry(2.5, 2.5)
+    const headshotMesh = new THREE.Mesh(headshotGeom, headshotMat)
+    headshotMesh.position.set(0, -4.0, -0.02)
+    this.headshot = { mesh: headshotMesh, material: headshotMat }
+    this.add(this.headshot)
+  }
+
+  createScene(content) {
     this._createProjectWindow()
     this._createPlane()
-    this._createText()
+    this._createTitle(content)
+    this._createText(content)
+    this._createHeadshot(content)
+
+    this._initScrollables()
+    this._onWheel = (e) => this.onScroll(e)
+
+    this.ctx.canvas.addEventListener('wheel', this._onWheel, {
+      passive: false,
+    })
   }
 
   boxClick(hit) {
-    const projects = this.ctx.scenes['projects']
-    Animations.enterScene(this.ctx, { x: 0, y: 0, z: 0 }, projects, () => {
-      this.ctx.interacter.onEscape.push(() => this.exitScene())
+    this.resetScroll()
 
-      projects.planeMat.stencilFunc = THREE.AlwaysStencilFunc // project background plane now always writing 1
-      this.disableObject(this.ctx, this.text)
-    })
+    const projects = this.ctx.scenes['projects']
+    this.ctx.canvas.removeEventListener('wheel', this._onWheel)
+    Animations.enterScene(
+      this.ctx,
+      this.projectWindow.mesh.userData.basePos,
+      projects,
+      () => {
+        this.ctx.interacter.onEscape.push(() => this.exitScene())
+
+        projects.planeMat.stencilFunc = THREE.AlwaysStencilFunc // project background plane now always writing 1
+        this.disableObject(this.ctx, this.title)
+      },
+    )
   }
 
   exitScene() {
     const projects = this.ctx.scenes['projects']
 
     projects.planeMat.stencilFunc = THREE.EqualStencilFunc
-    this.enableObject(this.ctx, this.text)
-    Animations.exitScene(this.ctx, { x: 0, y: 0, z: 5 }, this, () => {})
+    this.enableObject(this.ctx, this.title)
+    Animations.exitScene(this.ctx, { x: 0, y: 0, z: 5 }, this, () => {
+      this.ctx.canvas.addEventListener('wheel', this._onWheel, {
+        passive: false,
+      })
+    })
   }
 
   boxHover(window) {
@@ -86,5 +165,46 @@ export default class Splash extends Scene {
 
   boxDehover(window) {
     Animations.dehoverScale(window.mesh, this.ctx.canvas)
+  }
+
+  _initScrollables() {
+    this.scrollY = 0
+    this.scrollables = [
+      this.projectWindow.mesh,
+      this.title.mesh,
+      this.about.mesh,
+      this.learn.mesh,
+      this.arrow.mesh,
+      this.headshot.mesh,
+    ]
+
+    for (const mesh of this.scrollables) {
+      mesh.userData.baseY = mesh.position.y
+    }
+  }
+
+  onScroll(e) {
+    e.preventDefault()
+    const scrollSpeed = 0.003
+    this.scrollY += e.deltaY * scrollSpeed
+    this.scrollY = Math.max(0, Math.min(this.scrollY, 6))
+    for (const mesh of this.scrollables) {
+      mesh.position.y = mesh.userData.baseY + this.scrollY
+    }
+    const arrowOpacity = Math.max(0, 1 - this.scrollY * 3)
+    this.arrow.mesh.material.opacity = arrowOpacity
+    this.arrow.mesh.visible = arrowOpacity > 0
+    this.headshot.material.opacity = Math.min(1, this.scrollY * 3)
+  }
+
+  resetScroll() {
+    this.scrollY = 0
+    for (const mesh of this.scrollables) {
+      gsap.to(mesh.position, {
+        y: mesh.userData.baseY,
+        duration: 0.6,
+        ease: 'power3.inOut',
+      })
+    }
   }
 }

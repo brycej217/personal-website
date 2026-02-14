@@ -3,15 +3,17 @@ import Context from '../core/Context.js'
 import Splash from '../core/scenes/Splash.js'
 import Projects from '../core/scenes/Projects.js'
 
+const content = await fetch('public/assets/content.json').then((r) => r.json())
+
 const ctx = new Context()
 
 // scenes
 const splash = new Splash(ctx)
-splash.createScene()
+splash.createScene(content.splash)
 ctx.scenes['splash'] = splash
 
 const projects = new Projects(ctx)
-projects.createScene()
+projects.createScene(content.projects)
 ctx.scenes['projects'] = projects
 
 splash.enable(ctx)

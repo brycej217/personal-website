@@ -1,0 +1,29 @@
+{
+  "splash": {
+    "title": "Bryce Joseph",
+    "learn": "About Me",
+    "about": "Hi, I'm Bryce! I'm a software engineer specializing in graphics and GPU programming.\n\nI'm currently studying at The University of Pennsylvania's Computer Graphics and Game Technology Master's program.\n\nI have a passion for developing engaging and efficient interactive experiences. I have a keen interest in modern rendering systems, low-level APIs, and performance-driven design.\n\nThank you for stopping by! Feel free to check out some of my favorite projects above or get in contact with me here!",
+    "headshot": "public/assets/images/headshot.png"
+  },
+  "projects": {
+    "title": "Projects",
+    "items": [
+      {
+        "title": "CUDA Path Tracer",
+        "writeup": "A physically-based path tracer built from scratch using CUDA for GPU-accelerated rendering. Features include Monte Carlo integration, Russian roulette path termination, and support for diffuse, specular, and refractive materials. The renderer implements a BVH acceleration structure for efficient ray-scene intersection testing.\n\nThe renderer supports area lights, environment mapping, and depth of field effects. Scenes are defined using a custom JSON format that describes geometry, materials, and camera parameters. The BVH is constructed using the surface area heuristic (SAH) for optimal traversal performance.\n\nPerformance optimizations include shared memory usage for warp-level operations, persistent threads to minimize kernel launch overhead, and adaptive sampling that allocates more rays to high-variance pixels.",
+        "images": [
+          "public/assets/images/cuda0.png",
+          "public/assets/images/cuda1.png",
+          "public/assets/images/cuda2.png",
+          "public/assets/images/cuda3.png",
+          "public/assets/images/cuda4.png"
+        ]
+      },
+      {
+        "title": "glRemix",
+        "writeup": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.",
+        "images": []
+      }
+    ]
+  }
+}
