@@ -16,6 +16,9 @@ const projects = new Projects(ctx)
 projects.createScene(content.projects)
 ctx.scenes['projects'] = projects
 
+splash.addScrollables(projects.getScrollables())
+projects._hideForEntry()
+
 splash.enable(ctx)
 projects.enable(ctx)
 

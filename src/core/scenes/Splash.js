@@ -56,6 +56,10 @@ export default class Splash extends Scene {
     const title = this.ctx.create_text(content.title, {
       fontSize: 1.5,
       position: { x: 0, y: 2.5, z: 0 },
+      material: new THREE.MeshBasicMaterial({
+        color: 0xffffff,
+        transparent: true,
+      }),
     })
     this.add(title)
     this.title = title
@@ -122,6 +126,7 @@ export default class Splash extends Scene {
     this._createHeadshot(content)
 
     this._initScrollables()
+    this._initAnimatables()
     this._onWheel = (e) => this.onScroll(e)
 
     this.ctx.canvas.addEventListener('wheel', this._onWheel, {
@@ -134,13 +139,14 @@ export default class Splash extends Scene {
 
     const projects = this.ctx.scenes['projects']
     this.ctx.canvas.removeEventListener('wheel', this._onWheel)
+    this.onExitAnimation()
+    projects.onEnterAnimation()
     Animations.enterScene(
       this.ctx,
       this.projectWindow.mesh.userData.basePos,
       projects,
       () => {
         this.ctx.interacter.onEscape.push(() => this.exitScene())
-
         projects.planeMat.stencilFunc = THREE.AlwaysStencilFunc // project background plane now always writing 1
         this.disableObject(this.ctx, this.title)
       },
@@ -152,6 +158,8 @@ export default class Splash extends Scene {
 
     projects.planeMat.stencilFunc = THREE.EqualStencilFunc
     this.enableObject(this.ctx, this.title)
+    this.onEnterAnimation()
+    projects.onExitAnimation()
     Animations.exitScene(this.ctx, { x: 0, y: 0, z: 5 }, this, () => {
       this.ctx.canvas.addEventListener('wheel', this._onWheel, {
         passive: false,
@@ -183,6 +191,13 @@ export default class Splash extends Scene {
     }
   }
 
+  addScrollables(meshes) {
+    for (const mesh of meshes) {
+      mesh.userData.baseY = mesh.position.y
+      this.scrollables.push(mesh)
+    }
+  }
+
   onScroll(e) {
     e.preventDefault()
     const scrollSpeed = 0.003
@@ -191,10 +206,11 @@ export default class Splash extends Scene {
     for (const mesh of this.scrollables) {
       mesh.position.y = mesh.userData.baseY + this.scrollY
     }
-    const arrowOpacity = Math.max(0, 1 - this.scrollY * 3)
+    const opacityScale = 0.5
+    const arrowOpacity = Math.max(0, 1 - this.scrollY * opacityScale)
     this.arrow.mesh.material.opacity = arrowOpacity
     this.arrow.mesh.visible = arrowOpacity > 0
-    this.headshot.material.opacity = Math.min(1, this.scrollY * 3)
+    this.headshot.material.opacity = Math.min(1, this.scrollY * opacityScale)
   }
 
   resetScroll() {
@@ -205,6 +221,51 @@ export default class Splash extends Scene {
         duration: 0.6,
         ease: 'power3.inOut',
       })
+    }
+  }
+
+  _initAnimatables() {
+    this._titleHomeY = this.title.mesh.position.y
+    this._belowItems = [
+      this.learn.mesh,
+      this.arrow.mesh,
+      this.about.mesh,
+      this.headshot.mesh,
+    ]
+    for (const mesh of this._belowItems) {
+      mesh.userData._homeY = mesh.position.y
+    }
+  }
+
+  onExitAnimation() {
+    const ease = 'power3.in'
+    const duration = 0.8
+
+    const tl = gsap.timeline()
+
+    tl.to(
+      this.title.mesh.position,
+      { y: this._titleHomeY + 3, duration, ease },
+      0,
+    )
+    tl.to(this.title.mesh.material, { opacity: 0, duration, ease }, 0)
+
+    for (const mesh of this._belowItems) {
+      tl.to(mesh.position, { y: mesh.userData._homeY - 5, duration, ease }, 0)
+    }
+  }
+
+  onEnterAnimation(delay = 1.2) {
+    const ease = 'power3.out'
+    const duration = 1.0
+
+    const tl = gsap.timeline({ delay })
+
+    tl.to(this.title.mesh.position, { y: this._titleHomeY, duration, ease }, 0)
+    tl.to(this.title.mesh.material, { opacity: 1, duration, ease }, 0)
+
+    for (const mesh of this._belowItems) {
+      tl.to(mesh.position, { y: mesh.userData._homeY, duration, ease }, 0.15)
     }
   }
 }

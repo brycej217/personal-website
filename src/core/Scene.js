@@ -34,4 +34,14 @@ export default class Scene {
   enableObject(ctx, object) {
     ctx.scene.add(object.mesh)
   }
+
+  getScrollables() {
+    return []
+  }
+
+  onEnterAnimation() {}
+
+  onExitAnimation(onComplete) {
+    if (onComplete) onComplete()
+  }
 }
