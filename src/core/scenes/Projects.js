@@ -203,14 +203,12 @@ export default class Projects extends Scene {
       this.ctx.canvas.addEventListener('wheel', project._onWheel, {
         passive: false,
       })
-      window.addEventListener('keydown', project._onKeyDown)
     })
   }
 
   exitScene() {
     const project = this.activeProject
     this.ctx.canvas.removeEventListener('wheel', project._onWheel)
-    window.removeEventListener('keydown', project._onKeyDown)
     project.resetScroll()
 
     Animations.exitScene(

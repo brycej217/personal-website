@@ -9,20 +9,23 @@
     "title": "Projects",
     "items": [
       {
-        "title": "CUDA Path Tracer",
-        "writeup": "A physically-based path tracer built from scratch using CUDA for GPU-accelerated rendering. Features include Monte Carlo integration, Russian roulette path termination, and support for diffuse, specular, and refractive materials. The renderer implements a BVH acceleration structure for efficient ray-scene intersection testing.\n\nThe renderer supports area lights, environment mapping, and depth of field effects. Scenes are defined using a custom JSON format that describes geometry, materials, and camera parameters. The BVH is constructed using the surface area heuristic (SAH) for optimal traversal performance.\n\nPerformance optimizations include shared memory usage for warp-level operations, persistent threads to minimize kernel launch overhead, and adaptive sampling that allocates more rays to high-variance pixels.",
-        "images": [
-          "public/assets/images/cuda0.png",
-          "public/assets/images/cuda1.png",
-          "public/assets/images/cuda2.png",
-          "public/assets/images/cuda3.png",
-          "public/assets/images/cuda4.png"
+        "maxScroll": 8,
+        "content": [
+          { "type": "text", "x": 0, "y": 1.5, "text": "CUDA Path Tracer", "fontSize": 0.4 },
+          { "type": "image", "x": -1.0, "y": 0.1, "src": "public/assets/images/cuda0.png", "width": 2.2, "height": 1.4 },
+          { "type": "text", "x": 0.85, "y": 0.5, "text": "A physically-based path tracer built from scratch using CUDA for GPU-accelerated rendering.\n\nFeatures include Monte Carlo integration, Russian roulette path termination, and support for diffuse, specular, and refractive materials. The renderer implements a BVH acceleration structure for efficient ray-scene intersection.\n\nThe renderer supports area lights, environment mapping, and depth of field effects. The BVH is constructed using the surface area heuristic (SAH) for optimal traversal performance.\n\nPerformance optimizations include shared memory usage for warp-level operations, persistent threads to minimize kernel launch overhead, and adaptive sampling that allocates more rays to high-variance pixels.", "fontSize": 0.09, "maxWidth": 2.0, "anchorX": "left", "anchorY": "top" },
+          { "type": "image", "x": -1.0, "y": -1.7, "src": "public/assets/images/cuda1.png", "width": 2.2, "height": 1.4 },
+          { "type": "image", "x": -1.0, "y": -3.4, "src": "public/assets/images/cuda2.png", "width": 2.2, "height": 1.4 },
+          { "type": "image", "x": -1.0, "y": -5.1, "src": "public/assets/images/cuda3.png", "width": 2.2, "height": 1.4 },
+          { "type": "image", "x": -1.0, "y": -6.8, "src": "public/assets/images/cuda4.png", "width": 2.2, "height": 1.4 }
         ]
       },
       {
-        "title": "glRemix",
-        "writeup": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.",
-        "images": []
+        "maxScroll": 5,
+        "content": [
+          { "type": "text", "x": 0, "y": 1.5, "text": "glRemix", "fontSize": 0.4 },
+          { "type": "text", "x": 0, "y": 0.3, "text": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.", "fontSize": 0.09, "maxWidth": 2.0, "anchorX": "center", "anchorY": "top" }
+        ]
       }
     ]
   }
